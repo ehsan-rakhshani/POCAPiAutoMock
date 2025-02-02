@@ -35,6 +35,8 @@ public class WireMockService
                     var request = Request.Create()
                                          .WithPath(path.Key)
                                          .UsingMethod(operation.Key.ToString());
+
+                    var t = ReflectionHelper.GetStaticPropertyValueFromMethod(path.Key);
                     foreach (var parameter in operation.Value.Parameters)
                     {
                         if (parameter.In == ParameterLocation.Query)

@@ -29,7 +29,7 @@ namespace ApiDocumentation.Apis
         }
 
         [HttpPost]
-        [InstanceClass()]
+        [MyGeneric<OwnerFackObject>(typeof(Owner))]
         public ActionResult<bool> PostOwner([FromBody] Owner request)
         {
             try

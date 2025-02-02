@@ -1,73 +1,57 @@
-﻿using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Routing.Template;
+﻿
+using ApiDocumentation.Services;
 using System.Reflection;
 
-namespace ApiDocumentation.Services;
-
-public class RouteResolver
+public class ReflectionHelper
 {
-    private readonly IEnumerable<EndpointDataSource> _endpointSources;
-
-    public RouteResolver(IEnumerable<EndpointDataSource> endpointSources)
+    public static object GetStaticPropertyValueFromMethod(string fullyQualifiedMethodName)
     {
-        _endpointSources = endpointSources;
-    }
+        if (string.IsNullOrWhiteSpace(fullyQualifiedMethodName))
+            throw new ArgumentNullException(nameof(fullyQualifiedMethodName));
 
-    // ورودی: مسیر به‌صورت رشته، خروجی: اطلاعات کنترلر، اکشن و در صورت وجود، مقدار asghr از attribute Ehsan.
-    public (ControllerActionDescriptor ActionDescriptor, string EhsanParameter)? ResolveRoute(string route)
-    {
-        // نمونه یک HttpContext و RouteValueDictionary به‌صورت نمونه جهت تطبیق مسیر
-        var httpContext = new DefaultHttpContext();
-        // تبدیل مسیر ورودی به فرمت مناسب (بدون Query، تنها مسیر)
-        httpContext.Request.Path = route;
+        int lastDotIndex = fullyQualifiedMethodName.LastIndexOf('.');
+        if (lastDotIndex < 0 || lastDotIndex == fullyQualifiedMethodName.Length - 1)
+            throw new ArgumentException("فرمت رشته ورودی نامعتبر است.", nameof(fullyQualifiedMethodName));
 
-        foreach (var dataSource in _endpointSources)
+        string className = fullyQualifiedMethodName.Substring(0, lastDotIndex);
+        string methodName = fullyQualifiedMethodName.Substring(lastDotIndex + 1);
+
+        Type? type = Type.GetType(className);
+        if (type == null)
+            throw new Exception($"کلاس '{className}' پیدا نشد.");
+
+        MethodInfo? methodInfo = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        if (methodInfo == null)
+            throw new Exception($"متد '{methodName}' در کلاس '{className}' پیدا نشد.");
+
+        var customAttributes = methodInfo.GetCustomAttributes(inherit: false);
+        foreach (var attr in customAttributes)
         {
-            foreach (var endpoint in dataSource.Endpoints)
+            Type attrType = attr.GetType();
+            if (attrType.IsGenericType && attrType.GetGenericTypeDefinition() == typeof(MyGenericAttribute<>))
             {
-                // بررسی کنید آیا endpoint یک RouteEndpoint است یا نه
-                if (endpoint is RouteEndpoint routeEndpoint)
-                {
-                    // استخراج RoutePattern از endpoint.
-                    var routePattern = routeEndpoint.RoutePattern;
+                PropertyInfo? instanceTypeProp = attrType.GetProperty("InstanceClassType", BindingFlags.Public | BindingFlags.Instance);
+                if (instanceTypeProp == null)
+                    continue; // اگر پیدا نشد، ادامه می‌دهیم.
 
-                    // این شیء به ما در تطبیق مسیر کمک می‌کند.
-                    var matcher = new TemplateMatcher(TemplateParser.Parse(routePattern.RawText), new RouteValueDictionary());
+                Type? instanceClassType = instanceTypeProp.GetValue(attr) as Type;
+                if (instanceClassType == null)
+                    continue;
 
-                    // ایجاد دیکشنری برای ذخیره مقادیر استخراج شده از مسیر
-                    var routeValues = new RouteValueDictionary();
-                    if (matcher.TryMatch(route, routeValues))
-                    {
-                        // بررسی وجود ControllerActionDescriptor در Metadata
-                        var cad = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
-                        if (cad != null)
-                        {
-                            // بررسی Attribute بر روی متد یا کلاس:
-                            Type ehsanParam = null;
+                if (!typeof(IHasStaticProperty).IsAssignableFrom(instanceClassType))
+                    throw new Exception($"{instanceClassType.FullName} از IHasStaticProperty پیروی نمی‌کند.");
 
-                            // ابتدا بررسی روی متد
-                            var methodInfo = cad.MethodInfo;
-                            var attr = methodInfo.GetCustomAttribute<InstanceClassAttribute>();
-                            if (attr == null)
-                            {
-                                // در صورتی که روی متد نباشد، روی کنترلر هم می‌توانید جستجو کنید.
-                                attr = cad.ControllerTypeInfo.GetCustomAttribute<InstanceClassAttribute>();
-                            }
+                PropertyInfo? staticPropInfo = instanceClassType.GetProperty("StaticProperty", BindingFlags.Public | BindingFlags.Static);
+                if (staticPropInfo == null)
+                    throw new Exception($"StaticProperty در {instanceClassType.FullName} پیدا نشد.");
 
-                            if (attr != null)
-                            {
-                                ehsanParam = attr.InstanceClassType;
-                            }
-
-                            // ترمیم خروجی
-                            return (cad, null);
-                        }
-                    }
-                }
+                // بدست آوردن مقدار static property بدون ایجاد نمونه از کلاس
+                object? staticValue = staticPropInfo.GetValue(null);
+                return staticValue;
             }
         }
 
-        // در صورت عدم یافتن مسیر منطبق، مقدار null مرجوع می‌شود.
+        // اگر متدی attribute مورد نظر نداشته باشد، می‌توانیم null یا exception برگردانیم.
         return null;
     }
 }
