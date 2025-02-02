@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Enums\**" />
+    <Content Remove="Models\Enums\**" />
+    <EmbeddedResource Remove="Models\Enums\**" />
+    <None Remove="Models\Enums\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Apis\EmployeeController.cs" />
+    <Compile Remove="Models\Entities\Account.cs" />
+    <Compile Remove="Models\Entities\Arcticle.cs" />
+    <Compile Remove="Models\Entities\Business.cs" />
+    <Compile Remove="Models\Entities\FiscalPeriod.cs" />
+    <Compile Remove="Models\Entities\Vouchers.cs" />
+    <Compile Remove="Models\SwaggerModels\Enums\DataType.cs" />
+    <Compile Remove="Models\SwaggerModels\Enums\ParameterDataType.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\Definition.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\Info.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\Property.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\Schema.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\Scheme.cs" />
+    <Compile Remove="Models\SwaggerModels\Models\SwaggerResponse.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="WireMock.Net" Version="1.7.1" />
+  </ItemGroup>
+
+</Project>
