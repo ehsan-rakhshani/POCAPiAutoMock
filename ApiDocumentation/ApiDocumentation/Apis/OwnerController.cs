@@ -1,4 +1,5 @@
 ﻿using ApiDocumentation.Models.Entities;
+using ApiDocumentation.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace ApiDocumentation.Apis
         }
 
         [HttpPost]
+        [InstanceClass()]
         public ActionResult<bool> PostOwner([FromBody] Owner request)
         {
             try
